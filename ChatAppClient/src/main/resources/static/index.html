@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Chat</title>
+    <script src="https://cdn.jsdelivr.net/sockjs/1.1.2/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
+    <style>
+        #conversation {
+            border: 1px solid #ccc;
+            height: 300px;
+            overflow-y: scroll;
+            padding: 10px;
+        }
+        #message {
+            width: 80%;
+        }
+    </style>
+</head>
+<body>
+<h2>WebSocket Chat</h2>
+<div id="conversation"></div>
+<input type="text" id="name" placeholder="Your name"/>
+<input type="text" id="message" placeholder="Your message"/>
+<button onclick="sendMessage()">Send</button>
+
+<script type="text/javascript">
+    var stompClient = null;
+
+    function connect() {
+        var socket = new SockJS('/chat-websocket');
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, function(frame) {
+            console.log('Connected: ' + frame);
+            stompClient.subscribe('/topic/messages', function(message) {
+                showMessage(JSON.parse(message.body));
+            });
+        });
+    }
+
+    function sendMessage() {
+        var name = document.getElementById('name').value;
+        var content = document.getElementById('message').value;
+        if(name && content) {
+            stompClient.send("/app/message", {}, JSON.stringify({'name': name, 'content': content}));
+            document.getElementById('message').value = '';
+        } else {
+            alert('Name and message must not be empty!');
+        }
+    }
+
+    function showMessage(message) {
+        var conversation = document.getElementById('conversation');
+        var p = document.createElement('p');
+        p.textContent = message.name + ": " + message.content;
+        conversation.appendChild(p);
+        conversation.scrollTop = conversation.scrollHeight; // Scroll to the bottom
+    }
+
+    connect(); // Auto-connect when the page is loaded
+</script>
+</body>
+</html>
